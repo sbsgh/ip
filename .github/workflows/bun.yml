@@ -1,0 +1,24 @@
+name: bun
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"
+concurrency:
+  group: bun
+jobs:
+  bun:
+    name: bun
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+           bun-version: latest
+      - run: bun install && bun run ./proxyip.ts > /dev/null 2>&1
+      - run: awk -F\, '{print $1,$2,$3}' ok.txt|sed 's/\s\+/,/g'|awk 'BEGIN{OFS=FS=","} NR>1 {$4=$4 "Proxy Alive"; print}' > proxylist.txt
+      - run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add proxylist.txt
+          git commit -m "Update Proxylist"
+          git push
